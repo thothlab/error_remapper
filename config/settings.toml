@@ -1,0 +1,9 @@
+[input]
+code_fields = ["code", "errorCode"]
+message_fields = ["title", "message", "errorMessage"]
+
+[matching]
+fuzzy_threshold = 0.4
+
+[files]
+errors_yaml = "config/errors.yaml"
