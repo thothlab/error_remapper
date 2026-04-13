@@ -124,6 +124,26 @@
 
 ---
 
+## Задача 11: Java-интеграция через Shared Library + JNA
+**Статус:** Выполнено  
+**Результат:**
+- Добавлен `[lib]` раздел в `Cargo.toml` с типом `cdylib` для компиляции в shared library
+- Создан `src/lib.rs` с публичным Rust API (`remap()`) и C-совместимыми FFI-функциями:
+  - `error_remapper_remap()` — принимает JSON и путь к конфигу, возвращает `*mut c_char`
+  - `error_remapper_free()` — освобождает память, выделенную Rust
+- Создана Java-обёртка `java/src/main/java/com/thothlab/remapper/ErrorRemapper.java` с JNA
+- Создан пример использования `java/src/main/java/com/thothlab/remapper/Example.java`
+- Maven-проект `java/pom.xml` с зависимостью JNA 5.16.0
+- Обновлены README.md и README.en.md с документацией по Java-интеграции
+
+**Ключевые решения:**
+- `cdylib` crate type для генерации `.dylib` (macOS) / `.so` (Linux)
+- `#[no_mangle]` + `extern "C"` для C-совместимого ABI
+- Rust аллоцирует `CString`, отдаёт raw pointer; Java читает строку через JNA `Pointer`, затем вызывает `free` для освобождения памяти
+- `main.rs` использует `mod` декларации (не `use lib`), т.к. бинарь не может импортировать из собственного cdylib
+
+---
+
 ## Общее резюме
 
 Проект **error-remapper** полностью реализован и готов к публикации на GitHub.
@@ -132,7 +152,7 @@
 
 ```
 error-remapper/
-├── Cargo.toml              # Манифест проекта
+├── Cargo.toml              # Манифест проекта (bin + cdylib)
 ├── LICENSE                  # MIT лицензия
 ├── README.md                # Документация (RU)
 ├── README.en.md             # Документация (EN)
@@ -142,15 +162,24 @@ error-remapper/
 │   └── settings.toml        # Настройки утилиты
 ├── src/
 │   ├── main.rs              # CLI, точка входа
+│   ├── lib.rs               # Публичный API + FFI (C-совместимый)
 │   ├── config.rs            # Парсинг YAML-словаря
 │   ├── settings.rs          # Парсинг настроек TOML
 │   ├── input.rs             # Парсинг входного JSON
 │   ├── matcher.rs           # Алгоритм матчинга
-│   └── output.rs            # Формирование вывода
+│   └── output.rs            # Формирование вывода (шаблонный)
+├── java/
+│   ├── pom.xml              # Maven с JNA 5.16.0
+│   └── src/main/java/com/thothlab/remapper/
+│       ├── ErrorRemapper.java  # JNA-обёртка
+│       └── Example.java        # Пример использования
 ├── tests/
 │   └── integration.rs       # Интеграционные тесты
-├── spec.md                  # Техническое задание
-└── reports.md               # Этот отчёт
+└── doc/
+    ├── idea.md              # Идея проекта
+    ├── spec.md              # Техническое задание
+    ├── prompt.md            # Постановка задачи
+    └── reports.md           # Этот отчёт
 ```
 
 ### Ключевые решения

@@ -70,11 +70,20 @@ preprocess-error:
 
 ```toml
 [input]
-code_fields = ["code", "errorCode"]
-message_fields = ["title", "message", "errorMessage"]
+code_fields = ["code", "errorCode", "statusCode"]
+message_fields = ["title", "message", "errorMessage", "errorText"]
 
 [matching]
 fuzzy_threshold = 0.4
+
+[output]
+pretty = false
+
+# Шаблон выходного JSON: ключ = имя поля, значение = выражение с плейсхолдерами
+[output.template]
+statusCode = "{{code}}"
+errorText = "{{description}}"
+errorDescription = "{{input.ErrorDescription}}"
 
 [files]
 errors_yaml = "config/errors.yaml"
@@ -83,6 +92,18 @@ errors_yaml = "config/errors.yaml"
 - `code_fields` — имена полей JSON, где искать код ошибки
 - `message_fields` — имена полей JSON, где искать текст ошибки
 - `fuzzy_threshold` — порог нечёткого поиска (0.0–1.0)
+- `output.template` — шаблон выходного JSON (см. ниже)
+
+### Плейсхолдеры в шаблоне вывода
+
+| Плейсхолдер | Описание |
+|---|---|
+| `{{code}}` | Ремапленный код ошибки |
+| `{{description}}` | Ремапленное описание |
+| `{{matched}}` | Найдено ли совпадение (true/false) |
+| `{{original_code}}` | Исходный код из входного JSON |
+| `{{original_message}}` | Исходное сообщение из входного JSON |
+| `{{input.FIELD}}` | Любое поле из входного JSON (поддержка вложенности: `input.error.detail`) |
 
 ## CLI
 
@@ -107,6 +128,57 @@ error-remapper [OPTIONS] [INPUT_JSON]
 ```
 
 Если совпадение не найдено — `matched: false`, возвращаются оригинальные код и текст.
+
+## Java-интеграция (JNA)
+
+Утилита компилируется как shared library (`.dylib` / `.so`), что позволяет вызывать её из Java через JNA.
+
+### Сборка shared library
+
+```bash
+cargo build --release
+# Результат: target/release/liberror_remapper.dylib (macOS) / .so (Linux)
+```
+
+### Подключение в Java-проект
+
+Maven-зависимость:
+
+```xml
+<dependency>
+    <groupId>net.java.dev.jna</groupId>
+    <artifactId>jna</artifactId>
+    <version>5.16.0</version>
+</dependency>
+```
+
+### Использование
+
+```java
+import com.thothlab.remapper.ErrorRemapper;
+
+ErrorRemapper remapper = new ErrorRemapper("/path/to/config");
+String result = remapper.remap("{\"statusCode\": \"3011\", \"errorText\": \"Не пройден фрод\"}");
+System.out.println(result);
+```
+
+### Запуск
+
+```bash
+java -Djna.library.path=/path/to/target/release \
+     -cp target/classes:jna-5.16.0.jar \
+     com.thothlab.remapper.Example config
+```
+
+Java-обёртка находится в каталоге `java/`:
+
+```
+java/
+├── pom.xml
+└── src/main/java/com/thothlab/remapper/
+    ├── ErrorRemapper.java   # JNA-обёртка
+    └── Example.java         # Пример использования
+```
 
 ## Тестирование
 
