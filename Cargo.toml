@@ -5,6 +5,10 @@ edition = "2021"
 description = "CLI utility for fuzzy matching and remapping backend error codes using a YAML dictionary"
 license = "MIT"
 
+[lib]
+name = "error_remapper"
+crate-type = ["cdylib"]
+
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
