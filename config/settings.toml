@@ -21,7 +21,7 @@ pretty = false
 [output.template]
 statusCode = "{{code}}"
 errorText = "{{description}}"
-ErrorDescription = "{{input.ErrorDescription}}"
+errorDescription = "{{input.ErrorDescription}}"
 
 [files]
 errors_yaml = "config/errors.yaml"
