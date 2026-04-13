@@ -98,6 +98,18 @@ fn test_verbose_flag() {
 }
 
 #[test]
+fn test_status_code_with_error_description_passthrough() {
+    let input = r#"{"statusCode": "3011", "errorText": "Не пройден фрод", "ErrorDescription": "Процесс не был пройден через антифрод"}"#;
+    cmd()
+        .arg(input)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("81005"))
+        .stdout(predicate::str::contains("Перевод отклонён банком получателя"))
+        .stdout(predicate::str::contains("Процесс не был пройден через антифрод"));
+}
+
+#[test]
 fn test_custom_errors_path() {
     let input = r#"{"error":{"code":"2001","title":"unexpected symbol: test"}}"#;
     cmd()
