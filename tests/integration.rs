@@ -63,7 +63,8 @@ fn test_no_match_returns_original() {
         .arg(input)
         .assert()
         .success()
-        .stdout(predicate::str::contains("\"matched\":false"));
+        .stdout(predicate::str::contains("9999"))
+        .stdout(predicate::str::contains("Completely unrelated error text"));
 }
 
 #[test]

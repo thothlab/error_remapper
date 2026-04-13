@@ -1,9 +1,27 @@
 [input]
-code_fields = ["code", "errorCode"]
-message_fields = ["title", "message", "errorMessage"]
+code_fields = ["code", "errorCode", "statusCode"]
+message_fields = ["title", "message", "errorMessage", "errorText"]
 
 [matching]
 fuzzy_threshold = 0.4
+
+[output]
+pretty = false
+
+# Output template: key = output field name, value = expression with placeholders.
+#
+# Available placeholders:
+#   {{code}}             — remapped error code
+#   {{description}}      — remapped description
+#   {{matched}}          — whether a match was found (true/false)
+#   {{original_code}}    — original code from input
+#   {{original_message}} — original message from input
+#   {{input.FIELD}}      — any field from the original input JSON (supports nesting: input.error.detail)
+#
+[output.template]
+statusCode = "{{code}}"
+errorText = "{{description}}"
+ErrorDescription = "{{input.ErrorDescription}}"
 
 [files]
 errors_yaml = "config/errors.yaml"

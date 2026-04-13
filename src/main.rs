@@ -25,6 +25,10 @@ struct Cli {
     #[arg(short, long)]
     errors: Option<PathBuf>,
 
+    /// Pretty-print output JSON
+    #[arg(short, long)]
+    pretty: bool,
+
     /// Verbose output (enable debug logging)
     #[arg(short, long)]
     verbose: bool,
@@ -32,7 +36,12 @@ struct Cli {
 
 fn run(cli: Cli) -> Result<(), String> {
     // Load settings
-    let settings = settings::load_settings(&cli.config)?;
+    let mut settings = settings::load_settings(&cli.config)?;
+
+    // CLI flag overrides config
+    if cli.pretty {
+        settings.output.pretty = true;
+    }
 
     // Determine errors YAML path
     let errors_path = cli
@@ -58,7 +67,11 @@ fn run(cli: Cli) -> Result<(), String> {
         return Err("No input JSON provided".into());
     }
 
-    // Parse input error
+    // Parse input as raw JSON value (for passthrough fields)
+    let input_value: serde_json::Value = serde_json::from_str(&json_str)
+        .map_err(|e| format!("Failed to parse input JSON: {}", e))?;
+
+    // Parse input error fields
     let parsed = input::parse_error_json(
         &json_str,
         &settings.input.code_fields,
@@ -68,8 +81,8 @@ fn run(cli: Cli) -> Result<(), String> {
     // Find match
     let result = matcher::find_match(&parsed, &entries, settings.matching.fuzzy_threshold);
 
-    // Output result
-    let json_output = output::format_result(&result, cli.verbose);
+    // Output result using template
+    let json_output = output::format_result(&result, &input_value, &settings.output);
     println!("{}", json_output);
 
     Ok(())

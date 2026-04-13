@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
@@ -6,6 +7,7 @@ use std::path::Path;
 pub struct Settings {
     pub input: InputSettings,
     pub matching: MatchingSettings,
+    pub output: OutputSettings,
     pub files: FileSettings,
 }
 
@@ -21,19 +23,51 @@ pub struct MatchingSettings {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct OutputSettings {
+    /// Template mapping: output field name → source expression.
+    ///
+    /// Available placeholders:
+    ///   {{code}}         — remapped error code
+    ///   {{description}}  — remapped description
+    ///   {{matched}}      — whether a match was found (true/false)
+    ///   {{input.FIELD}}  — any field from the original input JSON
+    ///   {{original_code}}    — original code from input
+    ///   {{original_message}} — original message from input
+    pub template: HashMap<String, String>,
+
+    /// Pretty-print the output JSON
+    #[serde(default)]
+    pub pretty: bool,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct FileSettings {
     pub errors_yaml: String,
 }
 
 impl Default for Settings {
     fn default() -> Self {
+        let mut template = HashMap::new();
+        template.insert("code".into(), "{{code}}".into());
+        template.insert("customDesc".into(), "{{description}}".into());
+        template.insert("matched".into(), "{{matched}}".into());
+
         Settings {
             input: InputSettings {
-                code_fields: vec!["code".into(), "errorCode".into()],
-                message_fields: vec!["title".into(), "message".into(), "errorMessage".into()],
+                code_fields: vec!["code".into(), "errorCode".into(), "statusCode".into()],
+                message_fields: vec![
+                    "title".into(),
+                    "message".into(),
+                    "errorMessage".into(),
+                    "errorText".into(),
+                ],
             },
             matching: MatchingSettings {
                 fuzzy_threshold: 0.4,
+            },
+            output: OutputSettings {
+                template,
+                pretty: false,
             },
             files: FileSettings {
                 errors_yaml: "config/errors.yaml".into(),
@@ -44,7 +78,10 @@ impl Default for Settings {
 
 pub fn load_settings(path: &Path) -> Result<Settings, String> {
     if !path.exists() {
-        log::warn!("Settings file '{}' not found, using defaults", path.display());
+        log::warn!(
+            "Settings file '{}' not found, using defaults",
+            path.display()
+        );
         return Ok(Settings::default());
     }
 

@@ -12,6 +12,12 @@ pub struct RemapResult {
     pub custom_desc: String,
     /// Whether a match was found in the dictionary
     pub matched: bool,
+    /// Original error code from input
+    #[serde(skip)]
+    pub original_code: String,
+    /// Original error message from input
+    #[serde(skip)]
+    pub original_message: String,
 }
 
 /// A scored match candidate
@@ -111,6 +117,8 @@ pub fn find_match(
             code: entry.code.clone(),
             custom_desc: desc,
             matched: true,
+            original_code: original_code.clone(),
+            original_message: original_message.clone(),
         };
     }
 
@@ -131,9 +139,11 @@ pub fn find_match(
     if original_message.is_empty() {
         log::warn!("No message text available for fuzzy matching");
         return RemapResult {
-            code: original_code,
-            custom_desc: original_message,
+            code: original_code.clone(),
+            custom_desc: original_message.clone(),
             matched: false,
+            original_code,
+            original_message,
         };
     }
 
@@ -173,13 +183,17 @@ pub fn find_match(
             code: entry.code.clone(),
             custom_desc: desc,
             matched: true,
+            original_code: original_code.clone(),
+            original_message: original_message.clone(),
         }
     } else {
         log::info!("No match found above threshold {}", fuzzy_threshold);
         RemapResult {
-            code: original_code,
-            custom_desc: original_message,
+            code: original_code.clone(),
+            custom_desc: original_message.clone(),
             matched: false,
+            original_code,
+            original_message,
         }
     }
 }
